@@ -1,0 +1,52 @@
+---
+- name: connect - Get current DoubleZero status
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/doublezero
+      - status
+  become: true
+  become_user: "{{ doublezero_runtime_user }}"
+  register: doublezero_status_before_connect
+  changed_when: false
+  failed_when: false
+
+- name: connect - Determine if DoubleZero is already connected
+  ansible.builtin.set_fact:
+    doublezero_already_connected: >-
+      {{
+        doublezero_status_before_connect.rc == 0
+        and ('connected' in (doublezero_status_before_connect.stdout | lower))
+      }}
+
+- name: connect - Disconnect existing DoubleZero session before reconnect
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/doublezero
+      - disconnect
+  become: true
+  become_user: "{{ doublezero_runtime_user }}"
+  register: doublezero_disconnect_cmd
+  changed_when: doublezero_disconnect_cmd.rc == 0
+  failed_when: false
+  when: not doublezero_already_connected | bool
+
+- name: connect - Connect DoubleZero in IBRL mode
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/doublezero
+      - connect
+      - "{{ doublezero_connection_mode }}"
+  become: true
+  become_user: "{{ doublezero_runtime_user }}"
+  register: doublezero_connect_cmd
+  changed_when: true
+  when: not doublezero_already_connected | bool
+
+- name: connect - Wait for DoubleZero interface to appear
+  ansible.builtin.command: ip link show {{ doublezero_interface_name }}
+  register: doublezero_interface_wait
+  changed_when: false
+  retries: "{{ doublezero_connect_retries }}"
+  delay: "{{ doublezero_connect_wait_seconds }}"
+  until: doublezero_interface_wait.rc == 0
+  when: not doublezero_already_connected | bool

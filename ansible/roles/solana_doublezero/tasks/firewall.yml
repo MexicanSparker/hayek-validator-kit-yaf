@@ -1,0 +1,50 @@
+---
+- name: firewall - Allow GRE traffic for DoubleZero
+  community.general.ufw:
+    rule: allow
+    proto: gre
+  become: true
+
+- name: firewall - Allow inbound BGP over the DoubleZero interface
+  community.general.ufw:
+    rule: allow
+    interface: "{{ doublezero_interface_name }}"
+    direction: in
+    route: false
+    src: "{{ doublezero_bgp_cidr }}"
+    dest: "{{ doublezero_bgp_cidr }}"
+    port: "{{ doublezero_bgp_port }}"
+    proto: tcp
+  become: true
+
+- name: firewall - Allow outbound BGP over the DoubleZero interface
+  community.general.ufw:
+    rule: allow
+    interface: "{{ doublezero_interface_name }}"
+    direction: out
+    route: false
+    src: "{{ doublezero_bgp_cidr }}"
+    dest: "{{ doublezero_bgp_cidr }}"
+    port: "{{ doublezero_bgp_port }}"
+    proto: tcp
+  become: true
+
+- name: firewall - Allow inbound DoubleZero UDP traffic
+  community.general.ufw:
+    rule: allow
+    interface: "{{ doublezero_interface_name }}"
+    direction: in
+    route: false
+    port: "{{ doublezero_udp_port }}"
+    proto: udp
+  become: true
+
+- name: firewall - Allow outbound DoubleZero UDP traffic
+  community.general.ufw:
+    rule: allow
+    interface: "{{ doublezero_interface_name }}"
+    direction: out
+    route: false
+    port: "{{ doublezero_udp_port }}"
+    proto: udp
+  become: true

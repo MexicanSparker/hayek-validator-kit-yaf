@@ -1,0 +1,11 @@
+---
+- name: handlers - Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+
+- name: handlers - Restart doublezerod
+  ansible.builtin.systemd:
+    name: doublezerod
+    state: restarted
+  become: true

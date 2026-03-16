@@ -1,0 +1,73 @@
+---
+# DoubleZero Setup
+# ----------------
+# Installs and configures the optional DoubleZero client on an RBAC validator host.
+#
+# Usage:
+# ------
+# Run from /ansible directory:
+#
+# syntax check
+# ansible-playbook playbooks/pb_setup_doublezero.yml \
+#   -i solana_setup_host.yml \
+#   --limit host-charlie \
+#   --syntax-check \
+#   -e "target_host=host-charlie"
+#
+# mainnet example
+# ansible-playbook playbooks/pb_setup_doublezero.yml \
+#   -i solana_setup_host.yml \
+#   --limit hyk-lat-mia \
+#   -e "target_host=hyk-lat-mia" \
+#   -e "ansible_user=bob" \
+#   -e "validator_name=hayek-mainnet" \
+#   -e "validator_keyset_name=hayek-mainnet" \
+#   -e "solana_cluster=mainnet" \
+#   -K
+#
+# testnet example
+# ansible-playbook playbooks/pb_setup_doublezero.yml \
+#   -i solana_setup_host.yml \
+#   --limit hyk-lat-test \
+#   -e "target_host=hyk-lat-test" \
+#   -e "ansible_user=bob" \
+#   -e "validator_name=hayek-testnet" \
+#   -e "validator_keyset_name=hayek-testnet" \
+#   -e "solana_cluster=testnet" \
+#   -K
+
+- name: Configure DoubleZero
+  hosts: "{{ target_host }}"
+  user: "{{ ansible_user }}"
+  become: false
+
+  pre_tasks:
+    - name: Assert required parameters are defined
+      ansible.builtin.assert:
+        that:
+          - target_host is defined
+          - ansible_user is defined
+          - validator_name is defined
+          - solana_cluster is defined
+        fail_msg: >
+          Missing required playbook variables: target_host, ansible_user, validator_name, solana_cluster
+
+    - name: Debug ansible_limit and target_host
+      ansible.builtin.debug:
+        msg:
+          - "ansible_limit: {{ ansible_limit | default('not defined') }}"
+          - "ansible_limit type: {{ ansible_limit | type_debug }}"
+          - "target_host: {{ target_host }}"
+          - "ansible_play_hosts: {{ ansible_play_hosts }}"
+
+    - name: Validate that target_host matches the limited host
+      ansible.builtin.assert:
+        that:
+          - ansible_limit is defined
+          - target_host == ansible_limit
+        fail_msg: >
+          This playbook must be run with --limit to target exactly one host.
+          Make sure you run this playbook with: --limit {{ target_host }} -e "target_host={{ target_host }}"
+
+  roles:
+    - role: solana_doublezero

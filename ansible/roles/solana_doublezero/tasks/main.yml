@@ -1,0 +1,36 @@
+---
+- name: Detect validator RBAC mode
+  ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/detect_validator_rbac_mode.yml
+  tags: [solana_doublezero, precheck]
+
+- name: Precheck DoubleZero requirements
+  ansible.builtin.import_tasks: precheck.yml
+  tags: [solana_doublezero, precheck]
+
+- name: Install DoubleZero package and repositories
+  ansible.builtin.import_tasks: install.yml
+  tags: [solana_doublezero, install]
+
+- name: Configure DoubleZero runtime
+  ansible.builtin.import_tasks: configure.yml
+  tags: [solana_doublezero, configure]
+
+- name: Configure DoubleZero firewall rules
+  ansible.builtin.import_tasks: firewall.yml
+  tags: [solana_doublezero, firewall]
+
+- name: handlers - Flush handlers before connection
+  ansible.builtin.meta: flush_handlers
+  tags: [solana_doublezero, configure]
+
+- name: Connect DoubleZero network
+  ansible.builtin.import_tasks: connect.yml
+  tags: [solana_doublezero, connect]
+
+- name: Verify DoubleZero installation
+  ansible.builtin.import_tasks: verify.yml
+  tags: [solana_doublezero, verify]
+
+- name: Print DoubleZero summary
+  ansible.builtin.import_tasks: summary.yml
+  tags: [solana_doublezero, summary]

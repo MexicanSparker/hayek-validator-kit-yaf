@@ -1,0 +1,32 @@
+---
+- name: summary - Display DoubleZero operator hints
+  ansible.builtin.debug:
+    msg: |
+      ===========================================================
+      DoubleZero setup complete. Helpful commands:
+      ===========================================================
+
+      Log in to {{ inventory_hostname }} via SSH:
+      ssh -p {{ ansible_port | default(22) }} {{ ansible_user }}@{{ inventory_hostname }}
+
+      Switch to {{ doublezero_runtime_user }} user shell:
+      sudo -u {{ doublezero_runtime_user }} -i
+
+      Check DoubleZero status:
+      doublezero status
+      doublezero latency
+      doublezero address
+
+      Inspect the DoubleZero interface:
+      ip link show {{ doublezero_interface_name }}
+      ip route
+
+      Manual passport inputs:
+      Primary validator id: {{ doublezero_primary_validator_id }}
+      Backup validator id: {{ doublezero_backup_validator_id }}
+      DoubleZero address: {{ doublezero_address.stdout | default('unavailable') }}
+
+      Manual passport reminder:
+      Use --backup-validator-ids {{ doublezero_backup_validator_id }} when you submit access for this validator.
+
+      ===========================================================

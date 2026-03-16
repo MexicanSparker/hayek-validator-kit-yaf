@@ -1,0 +1,48 @@
+---
+- name: configure - Ensure DoubleZero config directory exists
+  ansible.builtin.file:
+    path: "{{ doublezero_config_dir }}"
+    state: directory
+    owner: "{{ doublezero_runtime_user }}"
+    group: "{{ doublezero_runtime_user }}"
+    mode: "{{ doublezero_identity_dir_mode }}"
+  become: true
+
+- name: configure - Install DoubleZero machine identity
+  ansible.builtin.copy:
+    src: "{{ doublezero_identity_src }}"
+    dest: "{{ doublezero_identity_dest }}"
+    owner: "{{ doublezero_runtime_user }}"
+    group: "{{ doublezero_runtime_user }}"
+    mode: "{{ doublezero_identity_mode }}"
+  become: true
+
+- name: configure - Ensure doublezerod override directory exists
+  ansible.builtin.file:
+    path: "{{ doublezero_systemd_override_dir }}"
+    state: directory
+    mode: "0755"
+  become: true
+
+- name: configure - Install doublezerod systemd override
+  ansible.builtin.template:
+    src: doublezerod.override.conf.j2
+    dest: "{{ doublezero_systemd_override_path }}"
+    mode: "0644"
+  notify:
+    - handlers - Reload systemd
+    - handlers - Restart doublezerod
+  become: true
+
+- name: configure - Set DoubleZero CLI environment
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/doublezero
+      - config
+      - set
+      - --env
+      - "{{ doublezero_env }}"
+  become: true
+  become_user: "{{ doublezero_runtime_user }}"
+  register: doublezero_config_set
+  changed_when: false

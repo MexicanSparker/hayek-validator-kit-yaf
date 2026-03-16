@@ -1,0 +1,96 @@
+---
+- name: precheck - Validate required RBAC variables
+  ansible.builtin.assert:
+    that:
+      - solana_cluster is defined
+      - solana_cluster in ['mainnet', 'testnet']
+      - validator_name is defined
+      - solana_user is defined
+      - solana_user_dir is defined
+      - validator_root_dir is defined
+      - validator_keys_dir is defined
+      - ansible_home_dir is defined
+      - system_solana_active_release_dir is defined
+      - validator_rbac_enabled | default(false)
+    fail_msg: >
+      DoubleZero setup requires an RBAC validator host with solana_cluster, validator_name,
+      solana_user, solana_user_dir, validator_root_dir, validator_keys_dir, ansible_home_dir,
+      and system_solana_active_release_dir defined.
+
+- name: precheck - Resolve validator keyset name
+  ansible.builtin.set_fact:
+    doublezero_resolved_keyset_name: "{{ validator_keyset_name | default(validator_name) }}"
+
+- name: precheck - Resolve DoubleZero cluster settings
+  ansible.builtin.set_fact:
+    doublezero_env: "{{ doublezero_env_map[solana_cluster] }}"
+    doublezero_repo_setup_url: "{{ doublezero_repo_setup_url_map[solana_cluster] }}"
+    doublezero_repo_name: "{{ doublezero_repo_name_map[solana_cluster] }}"
+    doublezero_repo_file: "{{ doublezero_repo_file_map[solana_cluster] }}"
+    doublezero_keyring_file: "{{ doublezero_keyring_file_map[solana_cluster] }}"
+    doublezero_legacy_trusted_key_file: "{{ doublezero_legacy_trusted_key_file_map[solana_cluster] }}"
+
+- name: precheck - Check local DoubleZero identity exists
+  ansible.builtin.stat:
+    path: "{{ doublezero_identity_src }}"
+  register: doublezero_local_identity_file
+  delegate_to: localhost
+  run_once: true
+
+- name: precheck - Fail if local DoubleZero identity is missing
+  ansible.builtin.fail:
+    msg: "dz-id.json not found in {{ doublezero_identity_src }}"
+  when: not doublezero_local_identity_file.stat.exists | default(false)
+
+- name: precheck - Check primary validator identity exists on target host
+  ansible.builtin.stat:
+    path: "{{ doublezero_primary_identity_path }}"
+  register: doublezero_primary_identity_file
+
+- name: precheck - Fail if primary validator identity is missing
+  ansible.builtin.fail:
+    msg: "primary-target-identity.json not found in {{ doublezero_primary_identity_path }}"
+  when: not doublezero_primary_identity_file.stat.exists | default(false)
+
+- name: precheck - Check hot-spare validator identity exists on target host
+  ansible.builtin.stat:
+    path: "{{ doublezero_backup_identity_path }}"
+  register: doublezero_backup_identity_file
+
+- name: precheck - Fail if hot-spare validator identity is missing
+  ansible.builtin.fail:
+    msg: >
+      hot-spare-identity.json not found in {{ doublezero_backup_identity_path }}.
+      Backup identity support is required for DoubleZero failover registration.
+  when: not doublezero_backup_identity_file.stat.exists | default(false)
+
+- name: precheck - Assert community.general collection metadata is available
+  ansible.builtin.command: ansible-doc -t module community.general.ufw
+  delegate_to: localhost
+  register: doublezero_ufw_doc
+  changed_when: false
+  failed_when: doublezero_ufw_doc.rc != 0
+  run_once: true
+
+- name: precheck - Derive primary validator public key
+  ansible.builtin.command:
+    argv:
+      - "{{ system_solana_active_release_dir }}/solana-keygen"
+      - pubkey
+      - "{{ doublezero_primary_identity_path }}"
+  register: doublezero_primary_validator_id_cmd
+  changed_when: false
+
+- name: precheck - Derive backup validator public key
+  ansible.builtin.command:
+    argv:
+      - "{{ system_solana_active_release_dir }}/solana-keygen"
+      - pubkey
+      - "{{ doublezero_backup_identity_path }}"
+  register: doublezero_backup_validator_id_cmd
+  changed_when: false
+
+- name: precheck - Register validator identities for summary output
+  ansible.builtin.set_fact:
+    doublezero_primary_validator_id: "{{ doublezero_primary_validator_id_cmd.stdout }}"
+    doublezero_backup_validator_id: "{{ doublezero_backup_validator_id_cmd.stdout }}"

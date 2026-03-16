@@ -1,0 +1,71 @@
+---
+- name: verify - Get doublezerod service status
+  ansible.builtin.systemd:
+    name: doublezerod
+  register: doublezero_service_status
+  changed_when: false
+  become: true
+
+- name: verify - Print doublezerod service status
+  ansible.builtin.debug:
+    var: doublezero_service_status
+
+- name: verify - Check doublezerod is active
+  ansible.builtin.assert:
+    that:
+      - doublezero_service_status.status.ActiveState | default('inactive') == 'active'
+    fail_msg: "doublezerod is not active after configuration"
+
+- name: verify - Get DoubleZero status
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/doublezero
+      - status
+  become: true
+  become_user: "{{ doublezero_runtime_user }}"
+  register: doublezero_status
+  changed_when: false
+
+- name: verify - Get DoubleZero latency
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/doublezero
+      - latency
+  become: true
+  become_user: "{{ doublezero_runtime_user }}"
+  register: doublezero_latency
+  changed_when: false
+
+- name: verify - Get DoubleZero address
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/doublezero
+      - address
+  become: true
+  become_user: "{{ doublezero_runtime_user }}"
+  register: doublezero_address
+  changed_when: false
+
+- name: verify - Check DoubleZero interface exists
+  ansible.builtin.command: ip link show {{ doublezero_interface_name }}
+  register: doublezero_interface_check
+  changed_when: false
+
+- name: verify - Fail if DoubleZero interface is missing
+  ansible.builtin.fail:
+    msg: >
+      {{ doublezero_interface_name }} does not exist after DoubleZero configuration.
+      Check doublezerod logs and network connectivity.
+  when: doublezero_interface_check.rc != 0
+
+- name: verify - Print DoubleZero status output
+  ansible.builtin.debug:
+    var: doublezero_status.stdout_lines
+
+- name: verify - Print DoubleZero latency output
+  ansible.builtin.debug:
+    var: doublezero_latency.stdout_lines
+
+- name: verify - Print DoubleZero address output
+  ansible.builtin.debug:
+    var: doublezero_address.stdout_lines

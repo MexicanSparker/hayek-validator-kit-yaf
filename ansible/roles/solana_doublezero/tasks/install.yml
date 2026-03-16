@@ -1,0 +1,65 @@
+---
+- name: install - Check desired DoubleZero repo file
+  ansible.builtin.stat:
+    path: "{{ doublezero_repo_file }}"
+  register: doublezero_repo_file_stat
+  become: true
+
+- name: install - Read desired DoubleZero repo file
+  ansible.builtin.slurp:
+    src: "{{ doublezero_repo_file }}"
+  register: doublezero_repo_file_content
+  when: doublezero_repo_file_stat.stat.exists | default(false)
+  become: true
+
+- name: install - Check desired DoubleZero keyring file
+  ansible.builtin.stat:
+    path: "{{ doublezero_keyring_file }}"
+  register: doublezero_keyring_file_stat
+  become: true
+
+- name: install - Determine if repository setup must be refreshed
+  ansible.builtin.set_fact:
+    doublezero_repo_refresh_required: >-
+      {{
+        (not doublezero_repo_file_stat.stat.exists | default(false))
+        or (not doublezero_keyring_file_stat.stat.exists | default(false))
+        or (
+          doublezero_repo_file_content is defined
+          and (
+            (doublezero_repo_file_content.content | b64decode) is not search(doublezero_repo_name)
+          )
+        )
+      }}
+
+- name: install - Remove stale DoubleZero repository files before switching clusters
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ doublezero_repo_cleanup_files }}"
+  when: doublezero_repo_refresh_required | bool
+  become: true
+
+- name: install - Configure desired DoubleZero apt repository
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -1sLf {{ doublezero_repo_setup_url | quote }} | bash
+  args:
+    executable: /bin/bash
+  register: doublezero_repo_setup
+  changed_when: true
+  when: doublezero_repo_refresh_required | bool
+  become: true
+
+- name: install - Install or upgrade DoubleZero package
+  ansible.builtin.apt:
+    name: doublezero
+    state: latest
+    update_cache: true
+  become: true
+
+- name: install - Ensure doublezerod is enabled
+  ansible.builtin.systemd:
+    name: doublezerod
+    enabled: true
+  become: true

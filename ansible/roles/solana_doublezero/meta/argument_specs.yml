@@ -1,0 +1,23 @@
+---
+argument_specs:
+  main:
+    short_description: "Install and configure DoubleZero on RBAC validator hosts"
+    author: "Hayek Validator Team"
+    description:
+      - "Installs and configures the optional DoubleZero client"
+      - "Copies the pre-created DoubleZero machine identity"
+      - "Surfaces primary and hot-spare validator IDs for manual passport flows"
+    options:
+      validator_name:
+        type: str
+        required: true
+        description: "Name of the validator instance"
+      validator_keyset_name:
+        type: str
+        required: false
+        description: "Validator keyset name on the control host; defaults to validator_name"
+      solana_cluster:
+        type: str
+        required: true
+        choices: ["testnet", "mainnet"]
+        description: "Target Solana cluster"

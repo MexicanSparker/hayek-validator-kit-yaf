@@ -1,0 +1,44 @@
+---
+doublezero_runtime_user: "{{ solana_user }}"
+doublezero_config_dir: "{{ solana_user_dir }}/.config/doublezero"
+doublezero_identity_src: "{{ ansible_home_dir }}/.validator-keys/{{ validator_keyset_name | default(validator_name) }}/dz-id.json"
+doublezero_identity_dest: "{{ doublezero_config_dir }}/id.json"
+doublezero_identity_dir_mode: "0700"
+doublezero_identity_mode: "0600"
+doublezero_env_map:
+  mainnet: "mainnet-beta"
+  testnet: "testnet"
+doublezero_repo_setup_url_map:
+  mainnet: "https://dl.cloudsmith.io/public/malbeclabs/doublezero/setup.deb.sh"
+  testnet: "https://dl.cloudsmith.io/public/malbeclabs/doublezero-testnet/setup.deb.sh"
+doublezero_repo_name_map:
+  mainnet: "malbeclabs/doublezero"
+  testnet: "malbeclabs/doublezero-testnet"
+doublezero_repo_file_map:
+  mainnet: "/etc/apt/sources.list.d/malbeclabs-doublezero.list"
+  testnet: "/etc/apt/sources.list.d/malbeclabs-doublezero-testnet.list"
+doublezero_keyring_file_map:
+  mainnet: "/usr/share/keyrings/malbeclabs-doublezero-archive-keyring.gpg"
+  testnet: "/usr/share/keyrings/malbeclabs-doublezero-testnet-archive-keyring.gpg"
+doublezero_legacy_trusted_key_file_map:
+  mainnet: "/etc/apt/trusted.gpg.d/malbeclabs-doublezero.gpg"
+  testnet: "/etc/apt/trusted.gpg.d/malbeclabs-doublezero-testnet.gpg"
+doublezero_repo_cleanup_files:
+  - "/etc/apt/sources.list.d/malbeclabs-doublezero.list"
+  - "/etc/apt/sources.list.d/malbeclabs-doublezero-testnet.list"
+  - "/usr/share/keyrings/malbeclabs-doublezero-archive-keyring.gpg"
+  - "/usr/share/keyrings/malbeclabs-doublezero-testnet-archive-keyring.gpg"
+  - "/etc/apt/trusted.gpg.d/malbeclabs-doublezero.gpg"
+  - "/etc/apt/trusted.gpg.d/malbeclabs-doublezero-testnet.gpg"
+doublezero_primary_identity_path: "{{ validator_keys_dir }}/{{ validator_name }}/primary-target-identity.json"
+doublezero_backup_identity_path: "{{ validator_keys_dir }}/{{ validator_name }}/hot-spare-identity.json"
+doublezero_systemd_override_dir: "/etc/systemd/system/doublezerod.service.d"
+doublezero_systemd_override_path: "{{ doublezero_systemd_override_dir }}/override.conf"
+doublezero_socket_file: "/run/doublezerod/doublezerod.sock"
+doublezero_interface_name: "doublezero0"
+doublezero_bgp_cidr: "169.254.0.0/16"
+doublezero_bgp_port: 179
+doublezero_udp_port: 44880
+doublezero_connection_mode: "ibrl"
+doublezero_connect_wait_seconds: 5
+doublezero_connect_retries: 6
